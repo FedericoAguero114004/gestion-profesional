@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión Profesional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  /* ── CONFIG: reemplazá estos valores ── */
+  /* CLIENT_ID y SHEET_ID se inyectan abajo en el script */
+
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE6;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.15);
+    --text: #1A1816;
+    --text2: #6B6860;
+    --text3: #9E9B93;
+    --accent: #2B4C3F;
+    --accent-light: #E8F0EC;
+    --accent2: #8B5E3C;
+    --accent2-light: #F5EDE4;
+    --danger: #8B2020;
+    --danger-light: #F5E4E4;
+    --warn: #7A5C1E;
+    --warn-light: #F5EDD8;
+    --ok: #2B4C3F;
+    --ok-light: #E8F0EC;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--accent);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-logo-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .sidebar-logo-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 3px;
+    letter-spacing: 0.04em;
+  }
+  .nav-section {
+    padding: 16px 12px 4px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    margin: 1px 8px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.7);
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .nav-item.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 500; }
+  .nav-icon { width: 16px; height: 16px; opacity: 0.8; flex-shrink: 0; }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--text);
+  }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #1e3a2e; }
+  .btn-secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: var(--danger-light); color: var(--danger); }
+
+  .page-content { padding: 24px 28px; flex: 1; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text3);
+    margin-bottom: 14px;
+  }
+
+  /* ── KPI GRID ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+  }
+  .kpi-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .kpi-value { font-size: 24px; font-weight: 300; color: var(--text); line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+  .kpi-card.ok { border-left: 3px solid var(--ok); }
+  .kpi-card.warn { border-left: 3px solid #C8942A; }
+  .kpi-card.danger { border-left: 3px solid var(--danger); }
+
+  /* ── PROGRESS ── */
+  .progress-wrap { margin-top: 10px; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+  .progress-bg { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+  /* ── CHARTS ROW ── */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-container { position: relative; width: 100%; height: 220px; }
+
+  /* ── PIPELINE ── */
+  .pipeline-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+  .pipeline-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .pipeline-header {
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pipeline-count {
+    background: rgba(0,0,0,0.08);
+    border-radius: 20px;
+    padding: 1px 7px;
+    font-size: 11px;
+  }
+  .pipeline-items { padding: 8px; min-height: 80px; }
+  .pipeline-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .pipeline-item:hover { border-color: var(--border2); }
+  .pipeline-item-name { font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .pipeline-item-sub { color: var(--text3); font-size: 11px; }
+  .ph-contacto .pipeline-header { background: #EEF0F5; color: #3A4060; }
+  .ph-consulta .pipeline-header { background: #EDE8F5; color: #3A2060; }
+  .ph-contratado .pipeline-header { background: var(--warn-light); color: var(--warn); }
+  .ph-trabajo .pipeline-header { background: var(--accent-light); color: var(--accent); }
+  .ph-cerrado .pipeline-header { background: var(--ok-light); color: var(--ok); }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; padding: 8px 12px;
+    font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: var(--bg); }
+  tbody td { padding: 10px 12px; color: var(--text2); vertical-align: middle; }
+  .td-primary { color: var(--text) !important; font-weight: 500; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+  }
+  .badge-ok { background: var(--ok-light); color: var(--ok); }
+  .badge-warn { background: var(--warn-light); color: var(--warn); }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+  .badge-info { background: var(--accent-light); color: var(--accent); }
+  .badge-neutral { background: var(--surface2); color: var(--text2); }
+  .badge-purple { background: #EDE8F5; color: #3A2060; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 540px;
+    padding: 28px;
+    position: relative;
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .modal-close {
+    position: absolute; top: 20px; right: 20px;
+    background: var(--surface2); border: none;
+    width: 28px; height: 28px; border-radius: 50%;
+    cursor: pointer; font-size: 16px; color: var(--text2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: var(--border); }
+
+  /* ── FORM ── */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; font-weight: 500; color: var(--text2); }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px 11px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg);
+    transition: border-color 0.15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+  .form-group textarea { resize: vertical; min-height: 72px; }
+  .form-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+    margin-top: 20px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── AUTH SCREEN ── */
+  .auth-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; width: 100%;
+    background: var(--bg);
+  }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px 44px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+  }
+  .auth-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .auth-sub { font-size: 13px; color: var(--text3); margin-bottom: 28px; }
+  .auth-btn {
+    width: 100%; padding: 11px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .auth-btn:hover { background: #1e3a2e; }
+  .auth-note { font-size: 11px; color: var(--text3); margin-top: 14px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--text); color: #fff;
+    padding: 10px 18px; border-radius: var(--radius);
+    font-size: 13px; z-index: 200;
+    opacity: 0; transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.ok { background: var(--accent); }
+  .toast.error { background: var(--danger); }
+
+  /* ── LOADING ── */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 48px; color: var(--text3); font-size: 13px; gap: 10px;
+  }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty {
+    text-align: center; padding: 32px;
+    color: var(--text3); font-size: 13px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .kpi-grid { grid-template-columns: repeat(2,1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+    .pipeline-row { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">Gestión Profesional</div>
+    <div class="auth-sub">Sistema de gestión para servicios profesionales</div>
+    <button class="auth-btn" onclick="iniciarSesion()">Ingresar con Google</button>
+    <div class="auth-note">Tus datos se guardan en tu propio Google Drive</div>
+  </div>
+</div>
+
+<!-- APP (oculto hasta auth) -->
+<div id="app" style="display:none;width:100%;display:none">
+
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-title">Gestión<br>Profesional</div>
+    <div class="sidebar-logo-sub">Dr. Abogado · Córdoba</div>
+  </div>
+
+  <div class="nav-section">Principal</div>
+  <div class="nav-item active" onclick="mostrarVista('dashboard')">
+    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.8"/></svg>
+    Dashboard
+  </div>
+  <div class="nav-item" onclick="mostrarVista('pipeline')">
+    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="1.8" stroke-linecap="round"/></svg>
+    Pipeline
+  </div>
+
+  <div class="nav-section">Gestión</div>
+  <div class="nav-item" onclick="mostrarVista('clientes')">
+    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke-width="1.8"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-width="1.8" stroke-linecap="round"/></svg>
+    Clientes
+  </div>
+  <div class="nav-item" onclick="mostrarVista('trabajos')">
+    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" stroke-width="1.8"/><path d="M8 2v4M16 2v4M3 10h18" stroke-width="1.8" stroke-linecap="round"/></svg>
+    Trabajos
+  </div>
+  <div class="nav-item" onclick="mostrarVista('seguimiento')">
+    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h10" stroke-width="1.8" stroke-linecap="round"/></svg>
+    Seguimiento
+  </div>
+
+  <div class="nav-section">Finanzas</div>
+  <div class="nav-item" onclick="mostrarVista('ingresos')">
+    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke-width="1.8" stroke-linecap="round"/></svg>
+    Ingresos
+  </div>
+  <div class="nav-item" onclick="mostrarVista('gastos')">
+    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 12V22H4V12M22 7H2v5h20V7zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Gastos
+  </div>
+
+  <div class="sidebar-footer">v1.0 · somospincel@gmail.com</div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-actions">
+      <button class="btn btn-secondary" id="btn-refresh" onclick="cargarTodo()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Actualizar
+      </button>
+      <button class="btn btn-primary" id="btn-nuevo" onclick="abrirModalContextual()">+ Nuevo</button>
+    </div>
+  </div>
+
+  <div class="page-content" id="page-content">
+    <div class="loading"><div class="spinner"></div>Cargando...</div>
+  </div>
+</div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODALES -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG — REEMPLAZÁ ESTOS VALORES
+// ══════════════════════════════════════════
+const CLIENT_ID = '424352605920-rajf4kqh4542a4opbgqjeanp8ghvmrc4.apps.googleusercontent.com';
+const SHEET_ID  = '1vWyALQ12FdUhJstGq6Wy_gS2CKdmCWkYc8dIN-8z4ls';
+const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly';
+
+// Nombres de hojas en tu Google Sheet
+const SHEETS = {
+  clientes:     'CLIENTES',
+  trabajos:     'TRABAJOS',
+  ingresos:     'INGRESOS',
+  gastos:       'GASTOS',
+  seguimiento:  'SEGUIMIENTO',
+  config:       'CONFIGURACION',
+};
+
+// ══════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════
+let token = null;
+let vistaActual = 'dashboard';
+let datos = { clientes:[], trabajos:[], ingresos:[], gastos:[], seguimiento:[], config:{} };
+let charts = {};
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function iniciarSesion() {
+  const base = location.origin + location.pathname;
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${CLIENT_ID}&response_type=token&` +
+    `scope=${encodeURIComponent(SCOPES)}&` +
+    `redirect_uri=${encodeURIComponent(base)}`;
+  location.href = url;
+}
+
+function checkAuth() {
+  const hash = location.hash.substring(1);
+  const params = new URLSearchParams(hash);
+  if (params.get('access_token')) {
+    token = params.get('access_token');
+    history.replaceState(null, '', location.pathname);
+    mostrarApp();
+    return true;
+  }
+  const stored = sessionStorage.getItem('gp_token');
+  if (stored) { token = stored; mostrarApp(); return true; }
+  return false;
+}
+
+function mostrarApp() {
+  sessionStorage.setItem('gp_token', token);
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  cargarTodo();
+}
+
+// ══════════════════════════════════════════
+// API SHEETS
+// ══════════════════════════════════════════
+async function apiGet(range) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (r.status === 401) { token = null; sessionStorage.removeItem('gp_token'); location.reload(); }
+  const d = await r.json();
+  return d.values || [];
+}
+
+async function apiAppend(sheet, row) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${sheet}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: [row] })
+  });
+  return r.ok;
+}
+
+async function apiUpdate(range, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values })
+  });
+  return r.ok;
+}
+
+// ══════════════════════════════════════════
+// CARGA DE DATOS
+// ══════════════════════════════════════════
+async function cargarTodo() {
+  try {
+    const [cl, tr, ing, gas, seg, cfg] = await Promise.all([
+      apiGet(`${SHEETS.clientes}!A2:I`),
+      apiGet(`${SHEETS.trabajos}!A2:M`),
+      apiGet(`${SHEETS.ingresos}!A2:J`),
+      apiGet(`${SHEETS.gastos}!A2:H`),
+      apiGet(`${SHEETS.seguimiento}!A2:I`),
+      apiGet(`${SHEETS.config}!A1:B20`),
+    ]);
+    datos.clientes    = cl.map(r => ({ id:r[0], nombre:r[1], cuil:r[2], email:r[3], tel:r[4], tipo:r[5], direccion:r[6], obs:r[7], activo:r[8] }));
+    datos.trabajos    = tr.map(r => ({ id:r[0], fecha:r[1], desc:r[2], cliente:r[3], actividad:r[4], honorarios:parseFloat(r[5])||0, estadoTrabajo:r[6], fechaLimite:r[7], fechaEntrega:r[8], estadoCobro:r[9], factura:r[10], obs:r[11], etapa:r[12] }));
+    datos.ingresos    = ing.map(r => ({ id:r[0], fecha:r[1], concepto:r[2], cliente:r[3], actividad:r[4], monto:parseFloat(r[5])||0, medio:r[6], comprobante:r[7], factura:r[8], trimestre:r[9] }));
+    datos.gastos      = gas.map(r => ({ id:r[0], fecha:r[1], desc:r[2], categoria:r[3], actividad:r[4], monto:parseFloat(r[5])||0, tipo:r[6], obs:r[7] }));
+    datos.seguimiento = seg.map(r => ({ id:r[0], nombre:r[1], contacto:r[2], consulta:r[3], fechaContacto:r[4], proximoSeg:r[5], estado:r[6], notas:r[7], trabajoId:r[8] }));
+    datos.config = Object.fromEntries(cfg.map(r => [r[0], r[1]]));
+    renderVista();
+    toast('Datos actualizados', 'ok');
+  } catch(e) {
+    toast('Error al cargar datos', 'error');
+    console.error(e);
+  }
+}
+
+// ══════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════
+function mostrarVista(v) {
+  vistaActual = v;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  const titulos = { dashboard:'Dashboard', pipeline:'Pipeline', clientes:'Clientes', trabajos:'Trabajos', seguimiento:'Seguimiento', ingresos:'Ingresos', gastos:'Gastos' };
+  document.getElementById('topbar-title').textContent = titulos[v] || v;
+  renderVista();
+}
+
+function renderVista() {
+  Object.values(charts).forEach(c => c.destroy && c.destroy());
+  charts = {};
+  const c = document.getElementById('page-content');
+  if (vistaActual === 'dashboard')    c.innerHTML = renderDashboard();
+  else if (vistaActual === 'pipeline') c.innerHTML = renderPipeline();
+  else if (vistaActual === 'clientes') c.innerHTML = renderClientes();
+  else if (vistaActual === 'trabajos') c.innerHTML = renderTrabajos();
+  else if (vistaActual === 'seguimiento') c.innerHTML = renderSeguimiento();
+  else if (vistaActual === 'ingresos') c.innerHTML = renderIngresos();
+  else if (vistaActual === 'gastos')   c.innerHTML = renderGastos();
+  if (vistaActual === 'dashboard') iniciarCharts();
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+const fmt = n => '$ ' + Math.round(n).toLocaleString('es-AR');
+const fmtK = n => n>=1e6 ? '$ '+(n/1e6).toFixed(1)+'M' : n>=1e3 ? '$ '+Math.round(n/1e3)+'K' : '$ '+Math.round(n);
+const hoy = () => new Date().toISOString().split('T')[0];
+const mesActual = () => new Date().getMonth();
+const anioActual = () => new Date().getFullYear();
+const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function ingresosMes(mes, anio) {
+  return datos.ingresos.filter(i => { const d = new Date(i.fecha); return d.getMonth()===mes && d.getFullYear()===anio; }).reduce((s,i) => s+i.monto, 0);
+}
+function gastosMes(mes, anio) {
+  return datos.gastos.filter(g => { const d = new Date(g.fecha); return d.getMonth()===mes && d.getFullYear()===anio; }).reduce((s,g) => s+g.monto, 0);
+}
+function ingresosAnio(anio) {
+  return datos.ingresos.filter(i => new Date(i.fecha).getFullYear()===anio).reduce((s,i)=>s+i.monto,0);
+}
+
+function limiteMonotributo() {
+  const cat = datos.config['▶  MI CATEGORÍA ACTUAL:'] || datos.config['Categoría Monotributo:'] || 'C';
+  const limites = { A:8208000, B:12300000, C:17200000, D:21500000, E:27900000, F:34800000, G:45700000, H:68500000 };
+  return limites[cat] || 17200000;
+}
+
+function badgeEstadoTrabajo(e) {
+  const m = { 'Pendiente':'warn','En Proceso':'info','Entregado':'ok','Cancelado':'danger' };
+  return `<span class="badge badge-${m[e]||'neutral'}">${e||''}</span>`;
+}
+function badgeCobro(e) {
+  const m = { 'Sin Facturar':'danger','Facturado':'warn','Cobrado Parcial':'warn','Cobrado Total':'ok','Incobrable':'danger' };
+  return `<span class="badge badge-${m[e]||'neutral'}">${e||''}</span>`;
+}
+function badgeEstadoSeg(e) {
+  const m = { 'Nuevo Lead':'purple','Contactado':'info','Esperando Respuesta':'warn','En Negociación':'warn','Convertido en Cliente':'ok','Descartado':'neutral' };
+  return `<span class="badge badge-${m[e]||'neutral'}">${e||''}</span>`;
+}
+function nextId(arr) { return arr.length ? Math.max(...arr.map(r=>parseInt(r.id)||0))+1 : 1; }
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard() {
+  const anio = anioActual();
+  const mes  = mesActual();
+  const ingM  = ingresosMes(mes, anio);
+  const gasM  = gastosMes(mes, anio);
+  const netM  = ingM - gasM;
+  const ingA  = ingresosAnio(anio);
+  const lim   = limiteMonotributo();
+  const pct   = lim > 0 ? ingA/lim : 0;
+  const cobPend = datos.trabajos.filter(t => t.estadoCobro==='Sin Facturar'||t.estadoCobro==='Cobrado Parcial').reduce((s,t)=>s+t.honorarios,0);
+  const leadsActivos = datos.seguimiento.filter(s => !['Convertido en Cliente','Descartado'].includes(s.estado)).length;
+  const semColor = pct>=1?'danger':pct>=0.8?'warn':'ok';
+  const semTxt   = pct>=1?'Excedido':pct>=0.8?'Atención':'OK';
+
+  const ingPorAct = ['Servicios Jurídicos','Piloto de Drones','Venta de Publicidad','Otros'].map(a => ({
+    label: a, val: datos.ingresos.filter(i=>i.actividad===a&&new Date(i.fecha).getFullYear()===anio).reduce((s,i)=>s+i.monto,0)
+  }));
+
+  const trabajosVencidos = datos.trabajos.filter(t => t.fechaLimite && new Date(t.fechaLimite)<new Date() && !['Entregado','Cancelado'].includes(t.estadoTrabajo)).length;
+  const leadsVencidos = datos.seguimiento.filter(s => s.proximoSeg && new Date(s.proximoSeg)<new Date() && !['Convertido en Cliente','Descartado'].includes(s.estado)).length;
+
+  return `
+  <div class="kpi-grid">
+    <div class="kpi-card ${semColor}">
+      <div class="kpi-label">Facturado ${anio}</div>
+      <div class="kpi-value">${fmtK(ingA)}</div>
+      <div class="kpi-sub">${(pct*100).toFixed(1)}% del límite · <strong class="badge badge-${semColor}" style="font-size:10px">${semTxt}</strong></div>
+      <div class="progress-wrap">
+        <div class="progress-bg"><div class="progress-fill" style="width:${Math.min(pct*100,100)}%;background:${pct>=1?'var(--danger)':pct>=0.8?'#C8942A':'var(--ok)'}"></div></div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Ingresos ${meses[mes]}</div>
+      <div class="kpi-value">${fmtK(ingM)}</div>
+      <div class="kpi-sub">Gastos: ${fmtK(gasM)}</div>
+    </div>
+    <div class="kpi-card ${netM>=0?'ok':'danger'}">
+      <div class="kpi-label">Resultado neto ${meses[mes]}</div>
+      <div class="kpi-value">${fmtK(netM)}</div>
+      <div class="kpi-sub">Margen ${ingM>0?Math.round((netM/ingM)*100):0}%</div>
+    </div>
+    <div class="kpi-card ${cobPend>0?'warn':'ok'}">
+      <div class="kpi-label">Cobros pendientes</div>
+      <div class="kpi-value">${fmtK(cobPend)}</div>
+      <div class="kpi-sub">${datos.trabajos.filter(t=>t.estadoCobro==='Sin Facturar'||t.estadoCobro==='Cobrado Parcial').length} trabajos</div>
+    </div>
+  </div>
+
+  ${trabajosVencidos>0||leadsVencidos>0 ? `
+  <div style="background:var(--warn-light);border:1px solid #C8942A;border-radius:var(--radius-lg);padding:12px 18px;margin-bottom:18px;display:flex;gap:20px;font-size:13px;color:var(--warn)">
+    ${trabajosVencidos>0?`<span><strong>${trabajosVencidos}</strong> trabajo${trabajosVencidos>1?'s':''} con fecha límite vencida</span>`:''}
+    ${leadsVencidos>0?`<span><strong>${leadsVencidos}</strong> seguimiento${leadsVencidos>1?'s':''} pendiente${leadsVencidos>1?'s':''} vencido${leadsVencidos>1?'s':''}</span>`:''}
+  </div>` : ''}
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Ingresos vs gastos — ${anio}</div>
+      <div class="chart-container"><canvas id="chart-ing-gas" role="img" aria-label="Ingresos y gastos mensuales">Datos mensuales.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Acumulado vs límite monotributo</div>
+      <div class="chart-container"><canvas id="chart-acum" role="img" aria-label="Acumulado vs límite">Progreso anual.</canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Ingresos por actividad — ${anio}</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        ${ingPorAct.map((a,i)=>`<span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${['#2B4C3F','#5C8A6F','#8B5E3C','#B8A090'][i]}"></span>${a.label}</span>`).join('')}
+      </div>
+      <div class="chart-container" style="height:180px"><canvas id="chart-act" role="img" aria-label="Ingresos por actividad">Por actividad.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Pipeline activo</div>
+      ${[
+        ['Contactos',datos.seguimiento.filter(s=>s.estado==='Nuevo Lead'||s.estado==='Contactado').length,'#EEF0F5','#3A4060'],
+        ['Consultas',datos.seguimiento.filter(s=>s.estado==='Esperando Respuesta'||s.estado==='En Negociación').length,'#EDE8F5','#3A2060'],
+        ['En trabajo',datos.trabajos.filter(t=>t.estadoTrabajo==='En Proceso').length,'var(--accent-light)','var(--accent)'],
+        ['Entregados este mes',datos.trabajos.filter(t=>t.estadoTrabajo==='Entregado'&&t.fechaEntrega&&new Date(t.fechaEntrega).getMonth()===mes).length,'var(--ok-light)','var(--ok)'],
+        ['Leads activos',leadsActivos,'var(--warn-light)','var(--warn)'],
+      ].map(([l,n,bg,col])=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:13px;color:var(--text2)">${l}</span>
+          <span style="background:${bg};color:${col};padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500">${n}</span>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function iniciarCharts() {
+  const anio = anioActual();
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gc = isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.05)';
+  const tc = isDark?'#9E9B93':'#9E9B93';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size = 11;
+
+  const ingData = meses.map((_,i) => ingresosMes(i, anio));
+  const gasData = meses.map((_,i) => gastosMes(i, anio));
+  const c1 = document.getElementById('chart-ing-gas');
+  if (c1) {
+    charts.c1 = new Chart(c1, {
+      type: 'bar',
+      data: { labels: meses, datasets: [
+        { label:'Ingresos', data: ingData, backgroundColor:'#2B4C3F', borderRadius:3 },
+        { label:'Gastos', data: gasData, backgroundColor:'#B85C38', borderRadius:3 }
+      ]},
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales: { x:{grid:{color:gc},ticks:{color:tc,autoSkip:false,maxRotation:0}}, y:{grid:{color:gc},ticks:{color:tc,callback:v=>fmtK(v)}} } }
+    });
+  }
+
+  const lim = limiteMonotributo();
+  let acum = 0;
+  const acumData = meses.map((_,i) => { acum += ingresosMes(i, anio); return acum; });
+  const c2 = document.getElementById('chart-acum');
+  if (c2) {
+    charts.c2 = new Chart(c2, {
+      type: 'line',
+      data: { labels: meses, datasets: [
+        { label:'Acumulado', data: acumData, borderColor:'#2B4C3F', backgroundColor:'rgba(43,76,63,0.08)', fill:true, tension:0.3, pointRadius:3 },
+        { label:'Límite', data: Array(12).fill(lim), borderColor:'#8B2020', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false }
+      ]},
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales: { x:{grid:{color:gc},ticks:{color:tc,autoSkip:false,maxRotation:0}},
+          y:{grid:{color:gc},min:0,max:lim*1.15,ticks:{color:tc,callback:v=>fmtK(v)}} } }
+    });
+  }
+
+  const acts = ['Servicios Jurídicos','Piloto de Drones','Venta de Publicidad','Otros'];
+  const actData = acts.map(a => datos.ingresos.filter(i=>i.actividad===a&&new Date(i.fecha).getFullYear()===anio).reduce((s,i)=>s+i.monto,0));
+  const c3 = document.getElementById('chart-act');
+  if (c3) {
+    charts.c3 = new Chart(c3, {
+      type: 'doughnut',
+      data: { labels: acts, datasets: [{ data: actData, backgroundColor:['#2B4C3F','#5C8A6F','#8B5E3C','#B8A090'], borderWidth:2, borderColor:'#fff', hoverOffset:4 }]},
+      options: { responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.raw)}} } }
+    });
+  }
+}
+
+// ══════════════════════════════════════════
+// PIPELINE
+// ══════════════════════════════════════════
+function renderPipeline() {
+  const etapas = [
+    { key:'contacto', label:'Contacto', cls:'ph-contacto', items: datos.seguimiento.filter(s=>['Nuevo Lead','Contactado'].includes(s.estado)) },
+    { key:'consulta', label:'Consulta', cls:'ph-consulta', items: datos.seguimiento.filter(s=>['Esperando Respuesta','En Negociación'].includes(s.estado)) },
+    { key:'contratado', label:'Contratado', cls:'ph-contratado', items: datos.trabajos.filter(t=>t.estadoTrabajo==='Pendiente') },
+    { key:'trabajo', label:'En trabajo', cls:'ph-trabajo', items: datos.trabajos.filter(t=>t.estadoTrabajo==='En Proceso') },
+    { key:'cerrado', label:'Cerrado', cls:'ph-cerrado', items: datos.trabajos.filter(t=>t.estadoTrabajo==='Entregado').slice(-5) },
+  ];
+  return `
+  <div style="margin-bottom:16px;font-size:13px;color:var(--text2)">
+    Vista kanban del flujo de trabajo. Clic en cualquier tarjeta para ver el detalle.
+  </div>
+  <div class="pipeline-row">
+  ${etapas.map(e => `
+    <div class="pipeline-col">
+      <div class="pipeline-header ${e.cls}">
+        <span>${e.label}</span>
+        <span class="pipeline-count">${e.items.length}</span>
+      </div>
+      <div class="pipeline-items">
+        ${e.items.length === 0 ? `<div style="font-size:11px;color:var(--text3);padding:8px 4px">Sin registros</div>` :
+          e.items.map(item => `
+          <div class="pipeline-item" onclick="verDetalle('${e.key}','${item.id||''}')">
+            <div class="pipeline-item-name">${item.nombre||item.cliente||'—'}</div>
+            <div class="pipeline-item-sub">${item.consulta||item.desc||item.estado||''}</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// CLIENTES
+// ══════════════════════════════════════════
+function renderClientes() {
+  return `
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="margin:0">Total: ${datos.clientes.length} clientes</div>
+      <button class="btn btn-primary" onclick="modalNuevoCliente()">+ Cliente</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Nombre</th><th>CUIL/CUIT</th><th>Email</th><th>Teléfono</th><th>Tipo</th><th>Estado</th>
+        </tr></thead>
+        <tbody>
+          ${datos.clientes.length===0 ? `<tr><td colspan="6" class="empty">No hay clientes registrados</td></tr>` :
+            datos.clientes.map(c=>`
+            <tr>
+              <td class="td-primary">${c.nombre||'—'}</td>
+              <td>${c.cuil||'—'}</td>
+              <td>${c.email||'—'}</td>
+              <td>${c.tel||'—'}</td>
+              <td><span class="badge badge-neutral">${c.tipo||'—'}</span></td>
+              <td><span class="badge ${c.activo==='Sí'?'badge-ok':'badge-neutral'}">${c.activo||'—'}</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// TRABAJOS
+// ══════════════════════════════════════════
+function renderTrabajos() {
+  return `
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="margin:0">Total: ${datos.trabajos.length} trabajos</div>
+      <button class="btn btn-primary" onclick="modalNuevoTrabajo()">+ Trabajo</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th>Descripción</th><th>Cliente</th><th>Actividad</th>
+          <th>Honorarios</th><th>Estado</th><th>Cobro</th>
+        </tr></thead>
+        <tbody>
+          ${datos.trabajos.length===0 ? `<tr><td colspan="7" class="empty">No hay trabajos registrados</td></tr>` :
+            datos.trabajos.map(t=>`
+            <tr>
+              <td>${t.fecha||'—'}</td>
+              <td class="td-primary">${t.desc||'—'}</td>
+              <td>${t.cliente||'—'}</td>
+              <td><span class="badge badge-info" style="background:var(--accent-light);color:var(--accent)">${t.actividad||'—'}</span></td>
+              <td>${fmt(t.honorarios)}</td>
+              <td>${badgeEstadoTrabajo(t.estadoTrabajo)}</td>
+              <td>${badgeCobro(t.estadoCobro)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// SEGUIMIENTO
+// ══════════════════════════════════════════
+function renderSeguimiento() {
+  const vencidos = datos.seguimiento.filter(s => s.proximoSeg && new Date(s.proximoSeg)<new Date() && !['Convertido en Cliente','Descartado'].includes(s.estado));
+  return `
+  ${vencidos.length>0?`<div style="background:var(--danger-light);border:1px solid var(--danger);border-radius:var(--radius-lg);padding:12px 18px;margin-bottom:16px;font-size:13px;color:var(--danger)">
+    <strong>${vencidos.length}</strong> seguimiento${vencidos.length>1?'s':''} vencido${vencidos.length>1?'s':''}:
+    ${vencidos.map(s=>`<strong>${s.nombre}</strong>`).join(', ')}
+  </div>`:''}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="margin:0">Leads y seguimiento (${datos.seguimiento.filter(s=>!['Convertido en Cliente','Descartado'].includes(s.estado)).length} activos)</div>
+      <button class="btn btn-primary" onclick="modalNuevoLead()">+ Lead</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Nombre</th><th>Contacto</th><th>Consulta</th><th>Próx. seguimiento</th><th>Estado</th><th>Notas</th>
+        </tr></thead>
+        <tbody>
+          ${datos.seguimiento.length===0 ? `<tr><td colspan="6" class="empty">No hay leads registrados</td></tr>` :
+            datos.seguimiento.map(s=>{
+              const venc = s.proximoSeg && new Date(s.proximoSeg)<new Date() && !['Convertido en Cliente','Descartado'].includes(s.estado);
+              return `<tr style="${venc?'background:var(--danger-light)':''}">
+                <td class="td-primary">${s.nombre||'—'}</td>
+                <td>${s.contacto||'—'}</td>
+                <td>${s.consulta||'—'}</td>
+                <td style="${venc?'color:var(--danger);font-weight:500':''}">${s.proximoSeg||'—'}</td>
+                <td>${badgeEstadoSeg(s.estado)}</td>
+                <td>${s.notas||'—'}</td>
+              </tr>`;}).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// INGRESOS
+// ══════════════════════════════════════════
+function renderIngresos() {
+  const total = datos.ingresos.reduce((s,i)=>s+i.monto,0);
+  return `
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div class="card-title" style="margin:0;margin-bottom:4px">Total registrado</div>
+        <div style="font-size:22px;font-weight:300">${fmt(total)}</div>
+      </div>
+      <button class="btn btn-primary" onclick="modalNuevoIngreso()">+ Ingreso</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th>Concepto</th><th>Cliente</th><th>Actividad</th>
+          <th>Monto</th><th>Medio</th><th>Factura</th>
+        </tr></thead>
+        <tbody>
+          ${datos.ingresos.length===0 ? `<tr><td colspan="7" class="empty">No hay ingresos registrados</td></tr>` :
+            datos.ingresos.map(i=>`
+            <tr>
+              <td>${i.fecha||'—'}</td>
+              <td class="td-primary">${i.concepto||'—'}</td>
+              <td>${i.cliente||'—'}</td>
+              <td><span class="badge badge-info" style="background:var(--accent-light);color:var(--accent)">${i.actividad||'—'}</span></td>
+              <td style="font-weight:500;color:var(--ok)">${fmt(i.monto)}</td>
+              <td>${i.medio||'—'}</td>
+              <td>${i.factura||'—'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// GASTOS
+// ══════════════════════════════════════════
+function renderGastos() {
+  const total = datos.gastos.reduce((s,g)=>s+g.monto,0);
+  const fijos = datos.gastos.filter(g=>g.tipo==='Fijo Mensual').reduce((s,g)=>s+g.monto,0);
+  return `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    <div class="kpi-card danger">
+      <div class="kpi-label">Total gastos registrados</div>
+      <div class="kpi-value">${fmt(total)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Gastos fijos mensuales</div>
+      <div class="kpi-value">${fmt(fijos)}</div>
+      <div class="kpi-sub">${datos.gastos.filter(g=>g.tipo==='Fijo Mensual').length} ítems fijos</div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="margin:0">Todos los gastos</div>
+      <button class="btn btn-primary" onclick="modalNuevoGasto()">+ Gasto</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Tipo</th>
+        </tr></thead>
+        <tbody>
+          ${datos.gastos.length===0 ? `<tr><td colspan="5" class="empty">No hay gastos registrados</td></tr>` :
+            datos.gastos.map(g=>`
+            <tr>
+              <td>${g.fecha||'—'}</td>
+              <td class="td-primary">${g.desc||'—'}</td>
+              <td><span class="badge badge-neutral">${g.categoria||'—'}</span></td>
+              <td style="font-weight:500;color:var(--danger)">${fmt(g.monto)}</td>
+              <td><span class="badge ${g.tipo==='Fijo Mensual'?'badge-info':'badge-neutral'}" style="${g.tipo==='Fijo Mensual'?'background:var(--accent-light);color:var(--accent)':''}">${g.tipo||'—'}</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// MODALES — FORMULARIOS
+// ══════════════════════════════════════════
+function abrirModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function cerrarModal(e) {
+  if (!e || e.target===document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+}
+function abrirModalContextual() {
+  const mapa = { dashboard:'modalNuevoIngreso', pipeline:'modalNuevoLead', clientes:'modalNuevoCliente', trabajos:'modalNuevoTrabajo', seguimiento:'modalNuevoLead', ingresos:'modalNuevoIngreso', gastos:'modalNuevoGasto' };
+  window[mapa[vistaActual]||'modalNuevoIngreso']();
+}
+
+const nombresClientes = () => datos.clientes.map(c=>`<option>${c.nombre||''}</option>`).join('');
+const optsActividad = () => ['Servicios Jurídicos','Piloto de Drones','Venta de Publicidad','Otros'].map(a=>`<option>${a}</option>`).join('');
+
+function modalNuevoCliente() {
+  abrirModal(`
+  <button class="modal-close" onclick="cerrarModal()">×</button>
+  <div class="modal-title">Nuevo cliente</div>
+  <div class="form-row">
+    <div class="form-group"><label>Nombre / Razón Social *</label><input id="f-nombre" placeholder="García, Juan Carlos"></div>
+    <div class="form-group"><label>CUIL/CUIT</label><input id="f-cuil" placeholder="20-12345678-3"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Email</label><input id="f-email" type="email" placeholder="email@ejemplo.com"></div>
+    <div class="form-group"><label>Teléfono</label><input id="f-tel" placeholder="351-123-4567"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Tipo</label>
+      <select id="f-tipo"><option>Persona Física</option><option>Empresa</option><option>Organismo Público</option><option>Otro</option></select>
+    </div>
+    <div class="form-group"><label>Estado</label>
+      <select id="f-activo"><option value="Sí">Activo</option><option value="No">Inactivo</option></select>
+    </div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Dirección</label><input id="f-dir" placeholder="Bv. San Juan 1234, Córdoba"></div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Observaciones</label><textarea id="f-obs"></textarea></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarCliente()">Guardar cliente</button>
+  </div>`);
+}
+
+async function guardarCliente() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio','error'); return; }
+  const id = nextId(datos.clientes);
+  const row = [id, nombre, document.getElementById('f-cuil').value, document.getElementById('f-email').value, document.getElementById('f-tel').value, document.getElementById('f-tipo').value, document.getElementById('f-dir').value, document.getElementById('f-obs').value, document.getElementById('f-activo').value];
+  const ok = await apiAppend(SHEETS.clientes, row);
+  if (ok) { toast('Cliente guardado','ok'); cerrarModal(); await cargarTodo(); }
+  else toast('Error al guardar','error');
+}
+
+function modalNuevoLead() {
+  abrirModal(`
+  <button class="modal-close" onclick="cerrarModal()">×</button>
+  <div class="modal-title">Nuevo lead / seguimiento</div>
+  <div class="form-row">
+    <div class="form-group"><label>Nombre contacto *</label><input id="f-nombre" placeholder="Rodríguez, María"></div>
+    <div class="form-group"><label>Tel / Email</label><input id="f-contacto" placeholder="351-555-0001"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Canal de origen</label>
+      <select id="f-canal"><option>WhatsApp</option><option>Email</option><option>Página web</option><option>Referido</option><option>Otro</option></select>
+    </div>
+    <div class="form-group"><label>Fecha primer contacto</label><input id="f-fecha" type="date" value="${hoy()}"></div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Consulta / Necesidad *</label><textarea id="f-consulta" placeholder="Describe brevemente la consulta del potencial cliente"></textarea></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Próximo seguimiento</label><input id="f-proxseg" type="date"></div>
+    <div class="form-group"><label>Estado</label>
+      <select id="f-estado"><option>Nuevo Lead</option><option>Contactado</option><option>Esperando Respuesta</option><option>En Negociación</option></select>
+    </div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Notas</label><textarea id="f-notas" placeholder="Observaciones adicionales"></textarea></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarLead()">Guardar lead</button>
+  </div>`);
+}
+
+async function guardarLead() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const consulta = document.getElementById('f-consulta').value.trim();
+  if (!nombre||!consulta) { toast('Nombre y consulta son obligatorios','error'); return; }
+  const id = nextId(datos.seguimiento);
+  const row = [id, nombre, document.getElementById('f-contacto').value, consulta, document.getElementById('f-fecha').value, document.getElementById('f-proxseg').value, document.getElementById('f-estado').value, document.getElementById('f-notas').value, ''];
+  const ok = await apiAppend(SHEETS.seguimiento, row);
+  if (ok) { toast('Lead guardado','ok'); cerrarModal(); await cargarTodo(); }
+  else toast('Error al guardar','error');
+}
+
+function modalNuevoTrabajo() {
+  abrirModal(`
+  <button class="modal-close" onclick="cerrarModal()">×</button>
+  <div class="modal-title">Nuevo trabajo / encargo</div>
+  <div class="form-row">
+    <div class="form-group"><label>Fecha inicio</label><input id="f-fecha" type="date" value="${hoy()}"></div>
+    <div class="form-group"><label>Cliente *</label>
+      <select id="f-cliente"><option value="">— Seleccionar —</option>${nombresClientes()}</select>
+    </div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Descripción del trabajo *</label><input id="f-desc" placeholder="Divorcio García – demanda y seguimiento"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Actividad</label>
+      <select id="f-act">${optsActividad()}</select>
+    </div>
+    <div class="form-group"><label>Honorarios pactados ($)</label><input id="f-hon" type="number" placeholder="0"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Estado</label>
+      <select id="f-estado"><option>Pendiente</option><option>En Proceso</option><option>Entregado</option></select>
+    </div>
+    <div class="form-group"><label>Fecha límite</label><input id="f-limite" type="date"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Estado de cobro</label>
+      <select id="f-cobro"><option>Sin Facturar</option><option>Facturado</option><option>Cobrado Parcial</option><option>Cobrado Total</option></select>
+    </div>
+    <div class="form-group"><label>Nro. Factura ARCA</label><input id="f-factura" placeholder="A-00001"></div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Observaciones</label><textarea id="f-obs"></textarea></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarTrabajo()">Guardar trabajo</button>
+  </div>`);
+}
+
+async function guardarTrabajo() {
+  const desc = document.getElementById('f-desc').value.trim();
+  const cliente = document.getElementById('f-cliente').value;
+  if (!desc||!cliente) { toast('Descripción y cliente son obligatorios','error'); return; }
+  const id = nextId(datos.trabajos);
+  const row = [id, document.getElementById('f-fecha').value, desc, cliente, document.getElementById('f-act').value, document.getElementById('f-hon').value||0, document.getElementById('f-estado').value, document.getElementById('f-limite').value, '', document.getElementById('f-cobro').value, document.getElementById('f-factura').value, document.getElementById('f-obs').value, 'activo'];
+  const ok = await apiAppend(SHEETS.trabajos, row);
+  if (ok) { toast('Trabajo guardado','ok'); cerrarModal(); await cargarTodo(); }
+  else toast('Error al guardar','error');
+}
+
+function modalNuevoIngreso() {
+  abrirModal(`
+  <button class="modal-close" onclick="cerrarModal()">×</button>
+  <div class="modal-title">Registrar ingreso</div>
+  <div class="form-row">
+    <div class="form-group"><label>Fecha de cobro *</label><input id="f-fecha" type="date" value="${hoy()}"></div>
+    <div class="form-group"><label>Cliente</label>
+      <select id="f-cliente"><option value="">— Seleccionar —</option>${nombresClientes()}</select>
+    </div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Concepto *</label><input id="f-concepto" placeholder="Adelanto divorcio García"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Actividad</label>
+      <select id="f-act">${optsActividad()}</select>
+    </div>
+    <div class="form-group"><label>Monto ($) *</label><input id="f-monto" type="number" placeholder="0"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Medio de pago</label>
+      <select id="f-medio"><option>Transferencia Bancaria</option><option>Mercado Pago</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select>
+    </div>
+    <div class="form-group"><label>Nro. Comprobante</label><input id="f-comp" placeholder="TRF-2025-001"></div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Nro. Factura ARCA</label><input id="f-factura" placeholder="A-00001"></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarIngreso()">Guardar ingreso</button>
+  </div>`);
+}
+
+async function guardarIngreso() {
+  const concepto = document.getElementById('f-concepto').value.trim();
+  const monto = parseFloat(document.getElementById('f-monto').value)||0;
+  if (!concepto||monto<=0) { toast('Concepto y monto son obligatorios','error'); return; }
+  const id = nextId(datos.ingresos);
+  const fecha = document.getElementById('f-fecha').value;
+  const mes = new Date(fecha).getMonth();
+  const trim = ['T1','T1','T1','T2','T2','T2','T3','T3','T3','T4','T4','T4'][mes];
+  const row = [id, fecha, concepto, document.getElementById('f-cliente').value, document.getElementById('f-act').value, monto, document.getElementById('f-medio').value, document.getElementById('f-comp').value, document.getElementById('f-factura').value, trim];
+  const ok = await apiAppend(SHEETS.ingresos, row);
+  if (ok) { toast('Ingreso guardado','ok'); cerrarModal(); await cargarTodo(); }
+  else toast('Error al guardar','error');
+}
+
+function modalNuevoGasto() {
+  abrirModal(`
+  <button class="modal-close" onclick="cerrarModal()">×</button>
+  <div class="modal-title">Registrar gasto</div>
+  <div class="form-row">
+    <div class="form-group"><label>Fecha *</label><input id="f-fecha" type="date" value="${hoy()}"></div>
+    <div class="form-group"><label>Monto ($) *</label><input id="f-monto" type="number" placeholder="0"></div>
+  </div>
+  <div class="form-row full">
+    <div class="form-group"><label>Descripción *</label><input id="f-desc" placeholder="Alquiler estudio enero"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Categoría</label>
+      <select id="f-cat">
+        <option>Alquiler</option><option>Servicios (luz/internet/gas)</option>
+        <option>Monotributo</option><option>Seguro Drone</option>
+        <option>Software/Suscripciones</option><option>Movilidad/Transporte</option>
+        <option>Librería/Insumos</option><option>Honorarios a 3ros</option>
+        <option>Marketing</option><option>Capacitación</option>
+        <option>Impuestos</option><option>Otros</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Tipo</label>
+      <select id="f-tipo"><option>Fijo Mensual</option><option>Eventual</option></select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Actividad relacionada</label>
+      <select id="f-act"><option>General</option>${optsActividad()}</select>
+    </div>
+    <div class="form-group"><label>Observaciones</label><input id="f-obs"></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarGasto()">Guardar gasto</button>
+  </div>`);
+}
+
+async function guardarGasto() {
+  const desc = document.getElementById('f-desc').value.trim();
+  const monto = parseFloat(document.getElementById('f-monto').value)||0;
+  if (!desc||monto<=0) { toast('Descripción y monto son obligatorios','error'); return; }
+  const id = nextId(datos.gastos);
+  const row = [id, document.getElementById('f-fecha').value, desc, document.getElementById('f-cat').value, document.getElementById('f-act').value, monto, document.getElementById('f-tipo').value, document.getElementById('f-obs').value];
+  const ok = await apiAppend(SHEETS.gastos, row);
+  if (ok) { toast('Gasto guardado','ok'); cerrarModal(); await cargarTodo(); }
+  else toast('Error al guardar','error');
+}
+
+function verDetalle(etapa, id) {
+  const item = etapa==='contacto'||etapa==='consulta' ?
+    datos.seguimiento.find(s=>s.id==id) :
+    datos.trabajos.find(t=>t.id==id);
+  if (!item) return;
+  const es_lead = etapa==='contacto'||etapa==='consulta';
+  abrirModal(`
+  <button class="modal-close" onclick="cerrarModal()">×</button>
+  <div class="modal-title">${item.nombre||item.desc||'Detalle'}</div>
+  <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
+    ${Object.entries(es_lead ? {
+      'Contacto':item.nombre,'Canal/Tel':item.contacto,'Consulta':item.consulta,
+      'Fecha':item.fechaContacto,'Próximo seguimiento':item.proximoSeg,
+      'Estado':item.estado,'Notas':item.notas
+    } : {
+      'Cliente':item.cliente,'Actividad':item.actividad,'Descripción':item.desc,
+      'Fecha inicio':item.fecha,'Fecha límite':item.fechaLimite,
+      'Honorarios':fmt(item.honorarios),'Estado':item.estadoTrabajo,
+      'Cobro':item.estadoCobro,'Factura':item.factura,'Obs.':item.obs
+    }).filter(([,v])=>v).map(([k,v])=>`
+      <div style="display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text3);min-width:140px;flex-shrink:0">${k}</span>
+        <span style="color:var(--text)">${v}</span>
+      </div>`).join('')}
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cerrar</button>
+    ${es_lead ? `<button class="btn btn-primary" onclick="cerrarModal();modalNuevoTrabajo()">Convertir en trabajo</button>` : ''}
+  </div>`);
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+let toastTimer;
+function toast(msg, tipo='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${tipo} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+if (!checkAuth()) {
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+</script>
+</body>
+</html>
